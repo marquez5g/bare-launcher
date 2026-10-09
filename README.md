@@ -38,27 +38,61 @@ It does not do wallpapers, folders, recommendations, search, widgets or themes. 
 
 ## Install
 
-You need ADB access to the device (Wireless debugging on Android 11 and newer).
+You do not need to build anything. You need a computer and ADB access to the TV. Setup takes about 5 minutes.
+
+**1. Get ADB working.** Follow the [ADB setup guide](docs/adb-setup.md). It covers developer mode, wireless debugging, installing ADB on Windows, macOS and Linux, and connecting. When `adb devices` lists your TV as `device`, go to step 2.
+
+**2. Download the APK.** Get `bare-1.0.0.apk` from the [latest release](https://github.com/marquez5g/bare-launcher/releases/latest). Save it in the folder where you run ADB.
+
+**3. Run these commands, one by one, in this order:**
 
 ```
-./build.sh                           # needs JDK 17+ and the Android SDK (platform 34)
-scripts/setup.sh 192.168.1.16:PORT --disable-stock
+adb install -r bare-1.0.0.apk
+adb shell settings put secure enabled_accessibility_services app.bare.launcher/app.bare.launcher.KeyService
+adb shell settings put secure accessibility_enabled 1
+adb shell pm disable-user --user 0 com.google.android.apps.tv.launcherx
+adb shell pm disable-user --user 0 com.google.android.tungsten.setupwraith
+adb shell cmd role add-role-holder --user 0 android.app.role.HOME app.bare.launcher
+adb shell input keyevent KEYCODE_HOME
 ```
 
-`setup.sh` installs the APK, sets Bare as the Home app, and turns on the key service. Without `--disable-stock`, many devices keep opening the stock launcher on Home. With it, the script disables the stock Google TV launcher (`com.google.android.apps.tv.launcherx`) and the setup wizard (`com.google.android.tungsten.setupwraith`) for your user. That is a normal, reversible `pm disable-user`. Some features that need the stock launcher stop working, such as the Google TV dashboard and the Assistant button panel.
+Each command prints `Success` or a short message. The last command opens Bare. Press **Home** on the remote to check. You see a grid of your apps.
+
+What the commands do:
+
+- Lines 1 to 3 install Bare and turn on its key service (needed for the Settings button).
+- Lines 4 and 5 disable the stock Google TV launcher and the Google setup wizard for your user. Many devices keep opening the stock launcher on Home until you do this. The setup wizard also registers as a Home app. Some features of the stock launcher stop working, for example the dashboard panel and the Assistant button panel.
+- Line 6 makes Bare the Home app.
+
+> Line 2 replaces the list of accessibility services you have turned on. If you use another accessibility service (for example a screen reader), use the script below instead. It keeps them.
+
+**On Linux or macOS you can use the script instead.** It does the same steps and keeps your other accessibility services:
+
+```
+git clone https://github.com/marquez5g/bare-launcher
+cd bare-launcher
+# put bare-1.0.0.apk in build/bare.apk, or run ./build.sh
+scripts/setup.sh 192.168.1.16:36259 --disable-stock
+```
+
+Use the IP address and port from your TV.
 
 ## Undo
 
-```
-scripts/restore.sh 192.168.1.16:PORT
-```
-
-This removes Bare and brings back the stock launcher. If the screen is stuck, run these two commands:
+Run these commands to go back to the stock launcher:
 
 ```
 adb shell pm enable com.google.android.apps.tv.launcherx
 adb shell pm enable com.google.android.tungsten.setupwraith
+adb shell cmd role remove-role-holder --user 0 android.app.role.HOME app.bare.launcher
+adb shell settings delete secure enabled_accessibility_services
+adb shell pm uninstall app.bare.launcher
+adb shell input keyevent KEYCODE_HOME
 ```
+
+(`scripts/restore.sh <ip:port>` does the same and keeps your other accessibility services.)
+
+If the screen is stuck or Home does nothing, the first two commands alone bring the stock launcher back.
 
 ## The Settings button
 
@@ -68,7 +102,9 @@ The service reads key events only. It does not read screen content. Android show
 
 To use another remote, set `DEBUG = true` in `KeyService.java`, rebuild, press the button and run `adb logcat -s BareKey`. Then add the code to the key check. Turn `DEBUG` off again, because it logs every key press.
 
-## Build
+## Build from source
+
+You only need this to change the code. To install, use the release (see above).
 
 ```
 ./build.sh
