@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/icon.png" width="128" alt="Bare icon"></p>
+
 # Bare
 
 A truly minimal Android TV launcher. It shows your apps and starts them. Nothing else.
