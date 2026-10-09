@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="key_desc">Bare reads the remote Settings key only, to open Settings. It does not read the screen or any other input.</string>
+</resources>
