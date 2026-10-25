@@ -12,7 +12,7 @@ Made for the **Xiaomi Smart Projector L1 Pro** (Formovie C045RGN, Android 14, 1.
 
 | | Bare | Stock Google TV launcher (same device) |
 |---|---|---|
-| APK size | 21 KB | about 23 MB |
+| APK size | 17 KB | about 23 MB |
 | Idle memory (PSS) | about 41 MB | about 125 MB (two processes) |
 | Processes | 1 | 2 |
 | Background services | none | many |
@@ -24,7 +24,7 @@ Memory numbers come from `dumpsys meminfo` on the projector. Your device can dif
 How it stays small:
 
 - Plain Java and plain Android views. No Kotlin, no Flutter, no Compose, no AndroidX, no libraries.
-- One Activity and one tiny accessibility service. No background services or boot receivers.
+- One Activity. No background services or boot receivers.
 - It listens for app install and remove events only while the launcher is on screen.
 - No network permission. It cannot send anything anywhere.
 
@@ -34,7 +34,7 @@ How it stays small:
 - D-pad focus with a two-tone border that shows on light and dark tiles.
 - Orders apps by how often you open them, then by name.
 - Shows a clock.
-- Opens Settings from the remote Settings button.
+- Opens Settings from a tile on the home screen.
 
 It does not do wallpapers, folders, recommendations, search, widgets or themes. That is the point.
 
@@ -50,8 +50,6 @@ You do not need to build anything. You need a computer and ADB access to the TV.
 
 ```
 adb install -r bare-1.0.0.apk
-adb shell settings put secure enabled_accessibility_services app.bare.launcher/app.bare.launcher.KeyService
-adb shell settings put secure accessibility_enabled 1
 adb shell pm disable-user --user 0 com.google.android.apps.tv.launcherx
 adb shell pm disable-user --user 0 com.google.android.tungsten.setupwraith
 adb shell cmd role add-role-holder --user 0 android.app.role.HOME app.bare.launcher
@@ -62,13 +60,12 @@ Each command prints `Success` or a short message. The last command opens Bare. P
 
 What the commands do:
 
-- Lines 1 to 3 install Bare and turn on its key service (needed for the Settings button).
-- Lines 4 and 5 disable the stock Google TV launcher and the Google setup wizard for your user. Many devices keep opening the stock launcher on Home until you do this. The setup wizard also registers as a Home app. Some features of the stock launcher stop working, for example the dashboard panel and the Assistant button panel.
-- Line 6 makes Bare the Home app.
+- Line 1 installs Bare.
+- Lines 2 and 3 disable the stock Google TV launcher and the Google setup wizard for your user. Many devices keep opening the stock launcher on Home until you do this. The setup wizard also registers as a Home app. Some features of the stock launcher stop working, for example the dashboard panel and the Assistant button panel.
+- Line 4 makes Bare the Home app.
+- Line 5 opens Bare.
 
-> Line 2 replaces the list of accessibility services you have turned on. If you use another accessibility service (for example a screen reader), use the script below instead. It keeps them.
-
-**On Linux or macOS you can use the script instead.** It does the same steps and keeps your other accessibility services:
+**On Linux or macOS you can use the script instead.** It does the same steps:
 
 ```
 git clone https://github.com/marquez5g/bare-launcher
@@ -87,22 +84,19 @@ Run these commands to go back to the stock launcher:
 adb shell pm enable com.google.android.apps.tv.launcherx
 adb shell pm enable com.google.android.tungsten.setupwraith
 adb shell cmd role remove-role-holder --user 0 android.app.role.HOME app.bare.launcher
-adb shell settings delete secure enabled_accessibility_services
 adb shell pm uninstall app.bare.launcher
 adb shell input keyevent KEYCODE_HOME
 ```
 
-(`scripts/restore.sh <ip:port>` does the same and keeps your other accessibility services.)
+(`scripts/restore.sh <ip:port>` does the same.)
 
 If the screen is stuck or Home does nothing, the first two commands alone bring the stock launcher back.
 
-## The Settings button
+## Settings
 
-On the projector, the Settings button on the remote sends scan code 384 (`KEY_TAPE`). The stock launcher handled it. When you disable the stock launcher, the button does nothing. Bare includes an accessibility service (`KeyService`) that catches the key and opens Settings.
+The remote's Settings button sends scan code 384 (`KEY_TAPE`). The system maps it to `KEYCODE_NOTIFICATION` and consumes it, so the launcher cannot see it. Earlier versions of Bare used an accessibility service to catch it. That service filters keys, and on this projector key filtering stops volume keys from repeating when held. The service is gone.
 
-The service reads key events only. It does not read screen content. Android shows a warning when you enable any accessibility service. This is normal.
-
-To use another remote, set `DEBUG = true` in `KeyService.java`, rebuild, press the button and run `adb logcat -s BareKey`. Then add the code to the key check. Turn `DEBUG` off again, because it logs every key press.
+Use the **Settings** tile next to the clock instead.
 
 ## Build from source
 

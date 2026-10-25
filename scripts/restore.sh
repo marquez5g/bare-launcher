@@ -14,7 +14,7 @@ a() { adb -s "$DEV" "$@"; }
 a shell pm enable com.google.android.apps.tv.launcherx || true
 a shell pm enable com.google.android.tungsten.setupwraith || true
 
-# Remove only the Bare entry from the accessibility list.
+# Remove the old Bare key service entry, if an older version added it.
 cur="$(a shell settings get secure enabled_accessibility_services | tr -d '\r')"
 new="$(printf '%s' "$cur" | tr ':' '\n' | grep -vxF "$SVC" | grep -vx 'null' | paste -sd: - || true)"
 if [ -z "$new" ]; then

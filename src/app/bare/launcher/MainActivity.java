@@ -14,7 +14,9 @@ import android.graphics.Outline;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
+import android.graphics.drawable.StateListDrawable;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -73,16 +75,43 @@ public class MainActivity extends Activity {
         col.setOrientation(LinearLayout.VERTICAL);
         col.setPadding(px(48), px(24), px(48), px(24));
 
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+
         TextClock clock = new TextClock(this);
         clock.setFormat12Hour("h:mm a");
         clock.setFormat24Hour("HH:mm");
         clock.setTextColor(Color.WHITE);
         clock.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
         clock.setGravity(Gravity.END);
-        col.addView(clock, new LinearLayout.LayoutParams(
+        header.addView(clock, new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        TextView settings = new TextView(this);
+        settings.setId(View.generateViewId());
+        settings.setText("Settings");
+        settings.setTextColor(Color.WHITE);
+        settings.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        settings.setGravity(Gravity.CENTER);
+        settings.setPadding(px(16), px(8), px(16), px(8));
+        settings.setFocusable(true);
+        settings.setClickable(true);
+        settings.setBackground(settingsBackground());
+        settings.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openSettings();
+            }
+        });
+        header.addView(settings, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        col.addView(header, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         grid = new GridView(this);
+        grid.setId(View.generateViewId());
         grid.setNumColumns(COLUMNS);
         grid.setVerticalSpacing(px(24));
         grid.setHorizontalSpacing(px(24));
@@ -107,6 +136,9 @@ public class MainActivity extends Activity {
         });
         col.addView(grid, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+
+        settings.setNextFocusDownId(grid.getId());
+        grid.setNextFocusUpId(settings.getId());
 
         root.addView(col, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -151,6 +183,28 @@ public class MainActivity extends Activity {
     @SuppressWarnings("deprecation")
     @Override
     public void onBackPressed() {
+    }
+
+    private void openSettings() {
+        try {
+            startActivity(new Intent(Settings.ACTION_SETTINGS));
+        } catch (Exception ignored) {
+        }
+    }
+
+    private Drawable settingsBackground() {
+        GradientDrawable focused = new GradientDrawable();
+        focused.setColor(Color.argb(50, 255, 255, 255));
+        focused.setCornerRadius(px(10));
+        focused.setStroke(px(2), Color.WHITE);
+        GradientDrawable normal = new GradientDrawable();
+        normal.setColor(Color.TRANSPARENT);
+        normal.setCornerRadius(px(10));
+        StateListDrawable bg = new StateListDrawable();
+        bg.addState(new int[] { android.R.attr.state_focused }, focused);
+        bg.addState(new int[] { android.R.attr.state_pressed }, focused);
+        bg.addState(new int[0], normal);
+        return bg;
     }
 
     private void launch(Item it) {

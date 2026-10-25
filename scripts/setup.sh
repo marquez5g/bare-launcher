@@ -19,14 +19,18 @@ a() { adb -s "$DEV" "$@"; }
 
 a install -r "$APK"
 
-# Add the key service to the enabled list. Keep the services that are already there.
+# Older versions used an accessibility service for the remote Settings button.
+# It is gone now. Remove it if it is still enabled, because it stops key repeat.
 cur="$(a shell settings get secure enabled_accessibility_services | tr -d '\r')"
 case ":$cur:" in
-  *":$SVC:"*) ;;
-  *) if [ -z "$cur" ] || [ "$cur" = "null" ]; then new="$SVC"; else new="$cur:$SVC"; fi
-     a shell settings put secure enabled_accessibility_services "$new" ;;
+  *":$SVC:"*)
+    new="$(printf '%s' "$cur" | tr ':' '\n' | grep -vxF "$SVC" | grep -vx 'null' | paste -sd: - || true)"
+    if [ -z "$new" ]; then
+      a shell settings delete secure enabled_accessibility_services || true
+    else
+      a shell settings put secure enabled_accessibility_services "$new"
+    fi ;;
 esac
-a shell settings put secure accessibility_enabled 1
 
 if [ "${2:-}" = "--disable-stock" ]; then
   a shell pm disable-user --user 0 com.google.android.apps.tv.launcherx || true
